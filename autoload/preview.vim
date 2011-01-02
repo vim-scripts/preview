@@ -23,6 +23,7 @@
 "              MA 02111-1307 USA
 " ============================================================================
 
+function! s:load()
 ruby << END_OF_RUBY
 require 'singleton'
 require 'tempfile'
@@ -88,9 +89,10 @@ class Preview
   private
 
   # TODO: handle errors when app can't be opened
-  def show_with(app_type)
-    path = tmp_write(yield)
-    app = get_apps_by_type(app_type).find{|app| system("which #{app} 2>1 1> /dev/null")}
+  def show_with(app_type, ext="html")
+    path = tmp_write(ext, yield)
+    app = get_apps_by_type(app_type).find{|app| system("which #{app.split()[0]} 2>1 1> /dev/null")}
+    puts path
     if app
       fork{exec "#{app} #{path} 2>1 1> /dev/null"}
     else
@@ -121,8 +123,9 @@ class Preview
     exts.find{|ext| ext.downcase == @ftype.downcase}
   end
 
-  def tmp_write(data)
-    tmp = Tempfile.new(@base_name)
+  def tmp_write(ext, data)
+    tmp = File.open(File.join(Dir::tmpdir, [@base_name,ext].join('.')), 'w')
+    #tmp = Tempfile.new(@base_name)
     tmp.write(data)
     tmp.close
     tmp.path
@@ -193,10 +196,17 @@ class Preview
         border: solid #DEDEDE 1px;
         background-color: #F6F6F6;
         padding: 1px;
+        font-family: monospace;
       }
       pre > code{
         border: none;
         padding: none;
+      }
+      blockquote{
+        border: dashed #AEAEAE 1px;
+        background-color: #F6F6F6;
+        padding: 4px 10px 4px 10px;
+        font-family: monospace;
       }
       div#main-container{
         background-color: #F2F2F2;
@@ -208,33 +218,48 @@ class Preview
   end
 end
 END_OF_RUBY
+endfunction
+
+
+function! s:init()
+    if(!(exists('s:loaded') && s:loaded))
+        call s:load()
+        let s:loaded = 1
+    endif
+endfunction
+
 
 
 function! preview#show()
+call s:init()
 ruby << END_OF_RUBY
     Preview.instance.show
 END_OF_RUBY
 endfunction
 
 function! preview#show_markdown()
+call s:init()
 ruby << END_OF_RUBY
     Preview.instance.show_markdown
 END_OF_RUBY
 endfunction
 
 function! preview#show_textile()
+call s:init()
 ruby << END_OF_RUBY
     Preview.instance.show_textile
 END_OF_RUBY
 endfunction
 
 function! preview#show_rdoc()
+call s:init()
 ruby << END_OF_RUBY
     Preview.instance.show_rdoc
 END_OF_RUBY
 endfunction
 
 function! preview#show_html()
+call s:init()
 ruby << END_OF_RUBY
     Preview.instance.show_html
 END_OF_RUBY
