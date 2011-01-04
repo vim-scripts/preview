@@ -12,7 +12,10 @@ Supported formats and dependecies:
     * textile - depends on 'RedCloth' ruby gem
     * html(htm) - no dependecies
 
-https://github.com/greyblake/vim-preview
+Homepage: https://github.com/greyblake/vim-preview
+
+Credits:
+    Donald Ephraim Curtis (support for OSX, fixing bugs)
 
 
 
