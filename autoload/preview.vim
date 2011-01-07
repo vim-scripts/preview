@@ -2,7 +2,7 @@
 " File:        preview.vim
 " Description: Vim global plugin to preview markup files(markdown,rdoc,textile)
 " Author:      Sergey Potapov (aka Blake) <blake131313 AT gmail DOT com>
-" Version:     0.1
+" Version:     0.5
 " Homepage:    http://github.com/greyblake/vim-preview
 " License:     GPLv2+ -- look it up.
 " Copyright:   Copyright (C) 2010 Sergey Potapov (aka Blake)
@@ -28,6 +28,7 @@ ruby << END_OF_RUBY
 require 'singleton'
 require 'tempfile'
 require 'rubygems'
+require 'shellwords'
 
 class Preview
   include Singleton
@@ -93,7 +94,16 @@ class Preview
     path = tmp_write(ext, yield)
     app = get_apps_by_type(app_type).find{|app| system("which #{app.split()[0]} &> /dev/null")}
     if app
-      fork{exec "#{app} #{Regexp.escape(path)} 2>&1 1>/dev/null"}
+      # double fork to avoid zombies
+      child = fork do
+        grandchild = fork do
+          [STDOUT, STDERR].each { |io| io.reopen("/dev/null", "w") }
+          exec *(app.shellsplit << path)
+        end
+        Process.detach grandchild
+      end
+      # child terminates quickly, so block and reap
+      Process.wait child
     else
       error "any of apllications you specified in #{OPTIONS[app_type_to_opt(app_type)]} are not available"
     end
