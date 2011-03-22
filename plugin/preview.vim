@@ -2,10 +2,10 @@
 " File:        preview.vim
 " Description: Vim global plugin to preview markup files(markdown,rdoc,textile)
 " Author:      Sergey Potapov (aka Blake) <blake131313 AT gmail DOT com>
-" Version:     0.5
+" Version:     0.6
 " Homepage:    http://github.com/greyblake/vim-preview
 " License:     GPLv2+ -- look it up.
-" Copyright:   Copyright (C) 2010 Sergey Potapov (aka Blake)
+" Copyright:   Copyright (C) 2010-2011 Sergey Potapov (aka Blake)
 "
 "              This program is free software; you can redistribute it and/or
 "              modify it under the terms of the GNU General Public License as
@@ -63,6 +63,11 @@ function! s:PreviewHtml()
     endif
 endfunction
 
+function! s:PreviewRonn()
+    if(s:PreviewVerifyRuby())
+        call preview#show_ronn()
+    endif
+endfunction
 
 " Commands
 command! Preview         call s:Preview()
@@ -70,10 +75,15 @@ command! PreviewMarkdown call s:PreviewMarkdown()
 command! PreviewTextile  call s:PreviewTextile()
 command! PreviewRdoc     call s:PreviewRdoc()
 command! PreviewHtml     call s:PreviewHtml()
+command! PreviewRonn     call s:PreviewRonn()
 
 " Default options
 if(!exists('g:PreviewBrowsers'))
-    let g:PreviewBrowsers    = 'firefox,safari,epiphany,google-chrome,opera'
+    if(system("uname") =~ "Darwin")
+        let g:PreviewBrowsers    = 'open,safari,firefox,chromium-browser,epiphany,google-chrome,opera'
+    else
+        let g:PreviewBrowsers    = 'firefox,safari,chromium-browser,epiphany,google-chrome,opera'
+    endif
 endif
 if(!exists('g:PreviewCSSPath'))
     let g:PreviewCSSPath     = ''
@@ -88,7 +98,10 @@ if(!exists('g:PreviewRdocExt'))
     let g:PreviewRdocExt     = 'rdoc'
 endif
 if(!exists('g:PreviewHtmlExt'))
-    let g:PreviewHtmlExt     = 'html,htm'
+    let g:PreviewHtmlExt     = 'html,htm,xht,xhtm,xhtml'
+endif
+if(!exists('g:PreviewRonnExt'))
+    let g:PreviewRonnExt     = 'ronn'
 endif
 
 " Default mapping

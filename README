@@ -10,12 +10,16 @@ Supported formats and dependecies:
     * markdown(md, mkd, mkdn, mdown) - depends on 'bluecloth' ruby gem
     * rdoc -  depends on 'github-markup' ruby gem
     * textile - depends on 'RedCloth' ruby gem
+    * ronn  -depends on 'ronn' ruby gem
     * html(htm) - no dependecies
+
 
 Homepage: https://github.com/greyblake/vim-preview
 
 Credits:
     Donald Ephraim Curtis (support for OSX, fixing bugs)
+    Sung Pae (fixing bugs)
+    Rdark (support for ronn file format)
 
 
 
