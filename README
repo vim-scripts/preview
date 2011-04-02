@@ -12,7 +12,7 @@ Supported formats and dependecies:
     * textile - depends on 'RedCloth' ruby gem
     * ronn  -depends on 'ronn' ruby gem
     * html(htm) - no dependecies
-
+   * reStructuredText(rst) - depends on 'RbST' ruby gem and 'rst2html' system util
 
 Homepage: https://github.com/greyblake/vim-preview
 
