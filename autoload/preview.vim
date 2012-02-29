@@ -26,21 +26,6 @@
 
 
 
-" A hack to fork a process since ruby1.9 has a bug
-function! s:PreviewPythonSpawn(app, args)
-    if has('python')
-        python <<PYTH
-import os
-app  = vim.eval('a:app')
-args = tuple(vim.eval('a:args '))
-os.spawnv(os.P_WAIT, app, (app,) + args)
-PYTH
-    else
-        echo "Can't preview. Seems you're using ruby1.9 and don't have a python installed"
-    endif
-endfunction
-
-
 function! s:load()
 ruby << END_OF_RUBY
 require 'singleton'
@@ -81,7 +66,10 @@ class Preview
         return
       end
     end
-    error "don't know how to handle .#{@ftype} format"
+    error "don't know how to handle .#{filetype} format"
+  rescue Exception => error
+    puts "#{error.class}: #{error.message}"
+    puts error.backtrace
   end
 
   def show_markdown
@@ -104,11 +92,11 @@ class Preview
 
   def show_textile
     return unless load_dependencies(:textile)
-    show_with(:browser) do 
+    show_with(:browser) do
       wrap_html RedCloth.new(content).to_html
     end
   end
-  
+
   # Syntax for Ronn::Document.new is different as it expects (content) to be a file
   # TODO: Work out how to read in a string.
 
@@ -126,7 +114,7 @@ class Preview
       wrap_html RbST.new(content).to_html
     end
   end
-  
+
   private
 
   # TODO: handle errors when app can't be opened
@@ -136,11 +124,9 @@ class Preview
     app_path = which(app.split()[0])
     args = app.shellsplit()[1..-1] << fpath
     if app_path
-      begin
-        ruby_spawn(app_path, args)
-      rescue NoMethodError => err
-        python_spawn(app_path, args)
-      end
+      cmd = "#{app_path} #{args.shelljoin} &"
+      VIM.command "call system('#{cmd}')"
+      VIM.command "redraw"
     else
       error "any of apllications you specified in #{OPTIONS[app_type_to_opt(app_type)]} are not available"
     end
@@ -153,31 +139,11 @@ class Preview
     end
     false
   end
-  
-  def ruby_spawn(app, args)
-    # double fork to avoid zombies
-    child = fork do
-      grandchild = fork do
-        [STDOUT, STDERR].each { |io| io.reopen("/dev/null", "w") }
-        exec app, *args
-      end
-      Process.detach grandchild
-    end
-    # child terminates quickly, so block and reap
-    Process.wait child
-  end
-
-  def python_spawn(app, args)
-    args_str = args.map{|a| "'#{a}'"}.join(',')
-    params = "'#{app}', [#{args_str}]"
-    VIM.command "call s:PreviewPythonSpawn(#{params})"
-  end
 
   def update_fnames
-    fname = VIM::Buffer.current.name
-    @base_name = File.basename(fname)
-    @base_path = fname.gsub(@base_name, "")
-    @ftype = fname[/\.([^.]+)$/, 1]
+    @filename = VIM::Buffer.current.name || Time.now.to_i.to_s
+    @base_name = File.basename(@filename)
+    @base_path = @filename.gsub(@base_name, "")
   end
 
   def get_apps_by_type(type)
@@ -189,12 +155,19 @@ class Preview
     when :browser
       :browsers
     else
-      raise "Undefined application type #{type}" 
+      raise "Undefined application type #{type}"
     end
   end
 
   def exts_match?(exts)
-    exts.find{|ext| ext.downcase == @ftype.downcase}
+    exts.find{|ext| ext.downcase == filetype.downcase}
+  end
+
+  def filetype
+    update_fnames
+    from_option = VIM.evaluate("&filetype")
+    from_filename = @filename[/\.([^.]+)$/, 1]
+    from_option.nil? ? from_filename : from_option
   end
 
   def tmp_write(ext, data)
@@ -238,7 +211,7 @@ class Preview
     if option(:css_path).empty?
       %Q(<style type="text/css">#{css}</style>)
     else
-      %Q(<link rel="stylesheet" href="#{option(:css_path)}" type="text/css" />) 
+      %Q(<link rel="stylesheet" href="#{option(:css_path)}" type="text/css" />)
     end
   end
 
