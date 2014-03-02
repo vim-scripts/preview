@@ -50,7 +50,7 @@ class Preview
 
   DEPENDECIES = {
     # :format => {:gem => 'name of gem'  , :require => 'file to require'}
-    :markdown => {:gem => 'bluecloth'    , :require => 'bluecloth'      },
+    :markdown => {:gem => 'redcarpet'    , :require => 'redcarpet'      },
     :textile  => {:gem => 'RedCloth'     , :require => 'redcloth'       },
     :rdoc     => {:gem => 'github-markup', :require => 'github/markup'  },
     :ronn     => {:gem => 'ronn'         , :require => 'ronn'           },
@@ -75,7 +75,8 @@ class Preview
   def show_markdown
     return unless load_dependencies(:markdown)
     show_with(:browser) do
-      wrap_html BlueCloth.new(content).to_html
+      markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)
+      wrap_html markdown.render(content)
     end
   end
 
@@ -172,7 +173,6 @@ class Preview
 
   def tmp_write(ext, data)
     tmp = File.open(File.join(Dir::tmpdir, [@base_name,ext].join('.')), 'w')
-    #tmp = Tempfile.new(@base_name)
     tmp.write(data)
     tmp.close
     tmp.path
@@ -194,6 +194,7 @@ class Preview
     <<-END_OF_HTML
       <html>
         <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
           <title>#{@base_name}</title>
           #{css_tag}
           #{base_tag}
@@ -208,11 +209,7 @@ class Preview
   end
 
   def css_tag
-    if option(:css_path).empty?
-      %Q(<style type="text/css">#{css}</style>)
-    else
-      %Q(<link rel="stylesheet" href="#{option(:css_path)}" type="text/css" />)
-    end
+  %Q(<link rel="stylesheet" href="#{option(:css_path)}" type="text/css" />)
   end
 
   def base_tag
@@ -232,42 +229,6 @@ class Preview
     false
   end
 
-  def css
-    <<-END_OF_CSS
-      body{
-        background-color: #FFFFFF;
-        padding: 20px;
-        margin: 0px;
-      }
-      pre{
-        border: solid #DEDEDE 1px;
-        background-color: #F6F6F6;
-        padding: 4px;
-      }
-      code{
-        border: solid #DEDEDE 1px;
-        background-color: #F6F6F6;
-        padding: 1px;
-        font-family: monospace;
-      }
-      pre > code{
-        border: none;
-        padding: none;
-      }
-      blockquote{
-        border: dashed #AEAEAE 1px;
-        background-color: #F6F6F6;
-        padding: 4px 10px 4px 10px;
-        font-family: monospace;
-      }
-      div#main-container{
-        background-color: #F2F2F2;
-        padding: 20px;
-        margin: 0px;
-        border: solid #D0D0D0 1px;
-      }
-    END_OF_CSS
-  end
 end
 END_OF_RUBY
 endfunction
